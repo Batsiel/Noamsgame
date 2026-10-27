@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>המסע של נועם בצראוי מקפריסין לישראל</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0077B6;
+            --accent-cyan: #00B4D8;
+            --light-cyan: #90E0EF;
+            --sand-gold: #FFB703;
+            --success-green: #2B9348;
+            --error-red: #E63946;
+            --bg-gradient: linear-gradient(135deg, #001845 0%, #023E8A 50%, #0077B6 100%);
+            color-scheme: dark;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: #001845;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        html { height: 100%; }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            color: #ffffff;
+            padding: 20px 0;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99;
+            pointer-events: none;
+        }
+
+        /* Plane: hidden by default, shown only during the opening flight */
+        #plane-animation {
+            position: fixed;
+            top: 28%;
+            left: 100%;
+            z-index: 100;
+            display: none;
+            direction: ltr;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        #plane-animation.fly {
+            display: flex;
+            animation: flyAcross 3.5s cubic-bezier(0.4, 0.1, 0.6, 0.9) forwards;
+        }
+
+        @keyframes flyAcross {
+            0%   { transform: translateX(0) translateY(40px) rotate(0deg); }
+            50%  { transform: translateX(calc(-50vw - 320px)) translateY(0) rotate(2deg); }
+            100% { transform: translateX(calc(-100vw - 700px)) translateY(-70px) rotate(6deg); }
+        }
+
+        .plane-svg {
+            width: 280px;
+            height: auto;
+            filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.45));
+            animation: wobble 0.9s ease-in-out infinite;
+        }
+
+        @keyframes wobble {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .trails {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-left: -150px;
+            margin-top: 34px;
+        }
+
+        .trail {
+            width: 380px;
+            height: 7px;
+            background: linear-gradient(to right, rgba(255,255,255,0.85), rgba(255,255,255,0));
+            border-radius: 10px;
+            filter: blur(2px);
+        }
+
+        .trail:nth-child(2) { width: 300px; opacity: 0.6; }
+
+        @media (max-width: 768px) {
+            .plane-svg { width: 190px; }
+            .trail { width: 240px; height: 5px; }
+            .trail:nth-child(2) { width: 190px; }
+            .trails { margin-left: -100px; margin-top: 22px; gap: 10px; }
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .title-badge {
+            background: var(--sand-gold);
+            color: #000;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(255, 183, 3, 0.4);
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ffffff, var(--light-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            margin-bottom: 35px;
+            color: #E0F1FF;
+            line-height: 1.6;
+        }
+
+        .btn-start {
+            background: linear-gradient(45deg, #FFB703, #FB8500);
+            color: #000;
+            font-size: 2rem;
+            font-weight: 900;
+            padding: 18px 50px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(251, 133, 0, 0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.08);
+            box-shadow: 0 15px 35px rgba(251, 133, 0, 0.7);
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 18px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--sand-gold));
+            transition: width 0.4s ease;
+            border-radius: 10px;
+        }
+
+        .step-counter {
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .question-box {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 35px;
+            color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            line-height: 1.3;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 22px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #ffffff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .option-btn.correct {
+            background: var(--success-green) !important;
+            border-color: #70e000 !important;
+            box-shadow: 0 0 25px rgba(43, 147, 72, 0.8) !important;
+            animation: pulse 0.6s ease;
+        }
+
+        .option-btn.wrong {
+            background: var(--error-red) !important;
+            border-color: #ff4d6d !important;
+            animation: shake 0.5s ease;
+        }
+
+        .option-btn { gap: 14px; }
+
+        .opt-letter {
+            flex-shrink: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: 50%;
+            background: var(--sand-gold);
+            color: #001845;
+            font-weight: 900;
+            font-size: 1.4rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .option-btn.flag-option { padding: 16px; }
+
+        .flag-svg {
+            display: block;
+            width: 130px;
+            height: 87px;
+            border-radius: 6px;
+            outline: 1px solid rgba(0, 0, 0, 0.18);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        @media (max-width: 768px) {
+            .flag-svg { width: 105px; height: 70px; }
+        }
+
+        .option-btn.correct .opt-letter { background: #ffffff; color: var(--success-green); }
+        .option-btn.wrong .opt-letter { background: #ffffff; color: var(--error-red); }
+
+        @media (max-width: 768px) {
+            .opt-letter { width: 2.2rem; height: 2.2rem; font-size: 1.2rem; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-12px); }
+            40%, 80% { transform: translateX(12px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .feedback-box {
+            margin-top: 15px;
+            min-height: 50px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .feedback-box.correct-text { color: #70e000; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .feedback-box.wrong-text { color: #ff4d6d; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+        .btn-next {
+            margin-top: 20px;
+            background: #ffffff;
+            color: #0077B6;
+            font-size: 1.5rem;
+            font-weight: 900;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255,255,255,0.3);
+            display: none;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        .btn-next:hover {
+            transform: scale(1.05);
+            background: var(--sand-gold);
+            color: #000;
+        }
+
+        .trophy-icon {
+            font-size: 5.5rem;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .certificate {
+            background: rgba(255, 255, 255, 0.95);
+            color: #001845;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .certificate h2 {
+            font-size: 2.2rem;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .certificate p {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .options-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2.2rem; }
+            .question-box { font-size: 1.6rem; }
+            .app-container { padding: 25px; }
+            .btn-start { font-size: 1.5rem; padding: 14px 32px; }
+            .option-btn { font-size: 1.3rem; padding: 16px; }
+            .certificate h2 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="fireworks-canvas"></canvas>
+
+    <div id="plane-animation" aria-hidden="true">
+        <svg class="plane-svg" viewBox="0 0 300 112" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#ffffff"/>
+                    <stop offset="0.6" stop-color="#eef4fa"/>
+                    <stop offset="1" stop-color="#b9cbdc"/>
+                </linearGradient>
+                <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#dfe9f3"/>
+                    <stop offset="1" stop-color="#9fb6cc"/>
+                </linearGradient>
+            </defs>
+            <!-- far wing -->
+            <polygon points="118,44 158,44 186,16 172,16" fill="#a9bfd4"/>
+            <!-- far stabilizer -->
+            <polygon points="248,47 270,47 284,36 274,36" fill="#a9bfd4"/>
+            <!-- fuselage -->
+            <path d="M14,59 Q16,44 56,43 L232,43 L262,10 L284,10 L273,47 Q283,53 281,61 Q278,71 250,72 L56,74 Q17,73 14,59 Z" fill="url(#bodyGrad)"/>
+            <!-- tail fin accent -->
+            <path d="M262,10 L284,10 L276,36 L254,36 Z" fill="#0077B6"/>
+            <path d="M268,18 L280,18 L277,28 L265,28 Z" fill="#FFB703"/>
+            <!-- cheat line -->
+            <path d="M30,64 L272,62 L271,66 L34,68 Z" fill="#0077B6"/>
+            <path d="M44,69 L262,67 L258,70 L52,72 Z" fill="#00B4D8"/>
+            <!-- cockpit -->
+            <path d="M24,53 Q30,46 44,46 L46,53 Z" fill="#0a2540"/>
+            <path d="M27,51 Q32,48 38,48" stroke="#90E0EF" stroke-width="1.4" fill="none" opacity="0.8"/>
+            <!-- door -->
+            <rect x="58" y="47" width="7" height="14" rx="2" fill="none" stroke="#9fb6cc" stroke-width="1.2"/>
+            <!-- windows -->
+            <g fill="#023E8A">
+                <circle cx="76" cy="54" r="2.6"/><circle cx="86" cy="54" r="2.6"/><circle cx="96" cy="54" r="2.6"/>
+                <circle cx="106" cy="54" r="2.6"/><circle cx="116" cy="54" r="2.6"/><circle cx="126" cy="54" r="2.6"/>
+                <circle cx="136" cy="54" r="2.6"/><circle cx="146" cy="54" r="2.6"/><circle cx="156" cy="54" r="2.6"/>
+                <circle cx="166" cy="54" r="2.6"/><circle cx="176" cy="54" r="2.6"/><circle cx="186" cy="54" r="2.6"/>
+                <circle cx="196" cy="54" r="2.6"/><circle cx="206" cy="54" r="2.6"/><circle cx="216" cy="54" r="2.6"/>
+                <circle cx="226" cy="54" r="2.6"/>
+            </g>
+            <!-- near stabilizer -->
+            <polygon points="244,60 272,60 292,76 276,76" fill="url(#wingGrad)"/>
+            <!-- near wing -->
+            <polygon points="108,64 166,64 196,104 178,104" fill="url(#wingGrad)"/>
+            <path d="M178,104 L196,104 L194,99 L176,99 Z" fill="#0077B6"/>
+            <!-- engine -->
+            <rect x="118" y="76" width="40" height="15" rx="7.5" fill="#d4e0ec"/>
+            <ellipse cx="120" cy="83.5" rx="4" ry="7.5" fill="#33475b"/>
+            <rect x="150" y="79" width="14" height="9" rx="4" fill="#9fb6cc"/>
+            <!-- blinking light -->
+            <circle cx="194" cy="103" r="2.4" fill="#ff4d6d">
+                <animate attributeName="opacity" values="1;0.15;1" dur="0.8s" repeatCount="indefinite"/>
+            </circle>
+        </svg>
+        <div class="trails">
+            <div class="trail"></div>
+            <div class="trail"></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div id="screen-intro" class="screen active">
+            <div class="title-badge">✈️ המסע האינטראקטיבי</div>
+            <h1>המסע של נועם בצראוי מקפריסין לישראל!</h1>
+            <p class="subtitle">הצטרפו אל נועם למסע המרתק מקפריסין הקסומה ועד להגעתו לישראל ולכיתה ד’!<br>ענו על השאלות יחד, עזרו לנועם להשלים את הדרך ונקבל אותו בחגיגה גדולה!</p>
+            <button class="btn-start" onclick="startGame()">
+                🚀 להתחלת המסע!
+            </button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="game-header">
+                <span class="step-counter" id="step-indicator">שאלה 1 מתוך 10</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="question-box" id="question-text">טוען שאלה...</div>
+
+            <div class="options-grid" id="options-container"></div>
+
+            <div class="feedback-box" id="feedback-message"></div>
+            <button class="btn-next" id="btn-next" onclick="nextQuestion()">לשלב הבא ⬅️</button>
+        </div>
+
+        <div id="screen-win" class="screen">
+            <div class="trophy-icon">🏆</div>
+            <h1>כל הכבוד לכיתה ד’!</h1>
+            <p class="subtitle">עניתם על כל השאלות בהצלחה ועברתם את כל המסע מקפריסין לישראל!</p>
+
+            <button class="btn-start" onclick="restartGame()">
+                🔄 לשחק שוב
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "1. איפה נולדתי?", options: ["ישראל", "יוון", "קפריסין", "ספרד"], correct: 2, fact: "נועם נולד באי היפה קפריסין!" },
+            { question: "2. עם כמה מזוודות באנו לישראל?", options: ["4", "7", "8", "10"], correct: 3, fact: "10 מזוודות מלאות בציוד וזיכרונות!" },
+            { question: "3. כמה זמן טיסה מקפריסין לישראל?", options: ["45 דקות", "60 דקות", "90 דקות", "120 דקות"], correct: 0, fact: "רק 45 דקות טיסה קצרות בשמיים!" },
+            { question: "4. כמה שנים המשפחה שלי גרה בקפריסין?", options: ["5 שנים", "13 שנה", "7 שנים", "20 שנה"], correct: 1, fact: "המשפחה של נועם גרה בקפריסין 13 שנים!" },
+            { question: "5. כמה שפות דיברתי בקפריסין?", options: ["5 שפות", "2 שפות", "3 שפות", "7 שפות"], correct: 2, fact: "נועם מדבר 3 שפות שונות!" },
+            { question: "6. מה השפה הרשמית בקפריסין?", options: ["קפריסאית", "טורקית", "יוונית", "יוונית וטורקית"], correct: 3, fact: "בקפריסין יש שתי שפות רשמיות: יוונית וטורקית!" },
+            { question: "7. באיזה ים נמצאת קפריסין?", options: ["הים האדום", "ים המלח", "ים תיכון", "הים הבלטי"], correct: 2, fact: "קפריסין היא אי בלב הים התיכון!" },
+            { question: "8. מהי עיר הבירה של קפריסין?", options: ["לרנקה", "פאפוס", "לימסול", "ניקוסיה"], correct: 3, fact: "ניקוסיה היא עיר הבירה של קפריסין!" },
+            { question: "9. באיזו עיר גרתי בקפריסין?", options: ["לימסול", "ניקוסיה", "פאפוס", "לרנקה"], correct: 0, fact: "נועם ומשפחתו גרו בעיר החוף לימסול!" },
+            { question: "10. מה המטבע שמשתמשים בו בקפריסין?", options: ["שקל", "לירה", "יורו", "דולר"], correct: 2, fact: "המטבע בקפריסין הוא יורו (€)!" },
+            { question: "11. מהו הדגל של קפריסין?", options: ["יוון", "קפריסין", "טורקיה", "ישראל"], flags: ["greece", "cyprus", "turkey", "israel"], correct: 1, fact: "בדגל קפריסין יש מפה של האי בצבע נחושת ושני ענפי זית, סמל לשלום!" },
+            { question: "12. איך כותבים נועם ביוונית?", options: ["Νοάκ", "Ναόμ", "Μοάμ", "Νοάμ"], correct: 3, fact: "ביוונית כותבים את השם נועם כך: Νοάμ!" }
+        ];
+
+        const FLAGS = {
+            cyprus: `<svg class="flag-svg" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+                <rect width="90" height="60" fill="#ffffff"/>
+                <path d="M22,30 Q24,26 30,25 L38,25 Q44,22 50,22 L60,17 L71,11 L66,17 L62,22 Q66,25 64,29 Q58,35 48,36 Q38,37 32,35 Q24,34 22,30 Z" fill="#D57800"/>
+                <g fill="#4E5B31" stroke="#4E5B31">
+                    <path d="M44,49 Q35,47 28,41" fill="none" stroke-width="1.4"/>
+                    <path d="M46,49 Q55,47 62,41" fill="none" stroke-width="1.4"/>
+                    <ellipse cx="39" cy="45.2" rx="3" ry="1.2" transform="rotate(-35 39 45.2)" stroke="none"/>
+                    <ellipse cx="34" cy="45.8" rx="3" ry="1.2" transform="rotate(15 34 45.8)" stroke="none"/>
+                    <ellipse cx="32" cy="41.6" rx="3" ry="1.2" transform="rotate(-45 32 41.6)" stroke="none"/>
+                    <ellipse cx="51" cy="45.2" rx="3" ry="1.2" transform="rotate(35 51 45.2)" stroke="none"/>
+                    <ellipse cx="56" cy="45.8" rx="3" ry="1.2" transform="rotate(-15 56 45.8)" stroke="none"/>
+                    <ellipse cx="58" cy="41.6" rx="3" ry="1.2" transform="rotate(45 58 41.6)" stroke="none"/>
+                </g>
+            </svg>`,
+            greece: `<svg class="flag-svg" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+                <rect width="90" height="60" fill="#0D5EAF"/>
+                <g fill="#ffffff">
+                    <rect y="6.667" width="90" height="6.667"/><rect y="20" width="90" height="6.667"/>
+                    <rect y="33.333" width="90" height="6.667"/><rect y="46.667" width="90" height="6.667"/>
+                </g>
+                <rect width="33.333" height="33.333" fill="#0D5EAF"/>
+                <rect x="13.333" width="6.667" height="33.333" fill="#ffffff"/>
+                <rect y="13.333" width="33.333" height="6.667" fill="#ffffff"/>
+            </svg>`,
+            turkey: `<svg class="flag-svg" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+                <rect width="90" height="60" fill="#E30A17"/>
+                <circle cx="32" cy="30" r="15" fill="#ffffff"/>
+                <circle cx="36" cy="30" r="12" fill="#E30A17"/>
+                <polygon points="52,22.5 53.76,27.57 59.13,27.68 54.85,30.93 56.41,36.07 52,33 47.59,36.07 49.15,30.93 44.87,27.68 50.24,27.57" fill="#ffffff" transform="rotate(-18 52 30)"/>
+            </svg>`,
+            israel: `<svg class="flag-svg" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+                <rect width="90" height="60" fill="#ffffff"/>
+                <rect y="6" width="90" height="9" fill="#0038B8"/>
+                <rect y="45" width="90" height="9" fill="#0038B8"/>
+                <g fill="none" stroke="#0038B8" stroke-width="2.2">
+                    <polygon points="45,19 54.53,35.5 35.47,35.5"/>
+                    <polygon points="45,41 54.53,24.5 35.47,24.5"/>
+                </g>
+            </svg>`
+        };
+
+        let currentQuestion = 0;
+        let canAnswer = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                osc.frequency.setValueAtTime(1046.50, now + 0.3);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(180, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+        }
+
+        /* Jet fly-by: engine roar + turbine whine, moving right→left with a doppler drop */
+        function playPlaneSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const ctx = audioCtx;
+            const now = ctx.currentTime;
+            const duration = 3.6;
+            const pass = 1.75; // moment the plane is closest
+
+            const master = ctx.createGain();
+            master.gain.setValueAtTime(0.0001, now);
+            master.gain.exponentialRampToValueAtTime(0.25, now + 0.9);
+            master.gain.exponentialRampToValueAtTime(0.9, now + pass);
+            master.gain.exponentialRampToValueAtTime(0.2, now + pass + 1.0);
+            master.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+            let output = master;
+            if (ctx.createStereoPanner) {
+                const pan = ctx.createStereoPanner();
+                pan.pan.setValueAtTime(0.9, now);
+                pan.pan.linearRampToValueAtTime(-0.9, now + duration);
+                master.connect(pan);
+                output = pan;
+            }
+            output.connect(ctx.destination);
+
+            // Roar (filtered noise)
+            const len = Math.floor(ctx.sampleRate * duration);
+            const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            let last = 0;
+            for (let i = 0; i < len; i++) {
+                const white = Math.random() * 2 - 1;
+                last = (last + 0.04 * white) / 1.04; // brown-ish rumble
+                d[i] = last * 3 + white * 0.25;
+            }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            const lp = ctx.createBiquadFilter();
+            lp.type = 'lowpass';
+            lp.Q.value = 0.7;
+            lp.frequency.setValueAtTime(350, now);
+            lp.frequency.exponentialRampToValueAtTime(2200, now + pass);
+            lp.frequency.exponentialRampToValueAtTime(450, now + duration);
+            const roarGain = ctx.createGain();
+            roarGain.gain.value = 0.9;
+            noise.connect(lp);
+            lp.connect(roarGain);
+            roarGain.connect(master);
+            noise.start(now);
+            noise.stop(now + duration);
+
+            // Turbine whine with doppler pitch drop
+            [[1650, 0.05], [2480, 0.03], [110, 0.12]].forEach(([f, level]) => {
+                const o = ctx.createOscillator();
+                o.type = f < 500 ? 'sawtooth' : 'sine';
+                o.frequency.setValueAtTime(f * 1.12, now);
+                o.frequency.linearRampToValueAtTime(f * 1.07, now + pass - 0.2);
+                o.frequency.exponentialRampToValueAtTime(f * 0.86, now + pass + 0.4);
+                o.frequency.linearRampToValueAtTime(f * 0.83, now + duration);
+                const g = ctx.createGain();
+                g.gain.value = level;
+                const f2 = ctx.createBiquadFilter();
+                f2.type = 'lowpass';
+                f2.frequency.value = f < 500 ? 400 : 4000;
+                o.connect(f2);
+                f2.connect(g);
+                g.connect(master);
+                o.start(now);
+                o.stop(now + duration);
+            });
+        }
+
+        function playPlaneSoundOld() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const duration = 3.5;
+
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(120, now);
+            filter.frequency.exponentialRampToValueAtTime(600, now + 1.5);
+            filter.frequency.exponentialRampToValueAtTime(150, now + duration);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.01, now);
+            gain.gain.linearRampToValueAtTime(0.4, now + 1.2);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(450, now + 1.5);
+            osc.frequency.exponentialRampToValueAtTime(120, now + duration);
+            oscGain.gain.setValueAtTime(0.01, now);
+            oscGain.gain.linearRampToValueAtTime(0.15, now + 1.2);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(oscGain);
+            oscGain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        }
+
+        let isFlying = false;
+
+        function triggerAirplaneAnimation(callback) {
+            if (isFlying) return;
+            isFlying = true;
+            const planeElem = document.getElementById('plane-animation');
+            planeElem.classList.remove('fly');
+            void planeElem.offsetWidth; // restart the animation cleanly
+            planeElem.classList.add('fly');
+            playPlaneSound();
+            setTimeout(() => {
+                planeElem.classList.remove('fly'); // hidden again — never shows on the question pages
+                isFlying = false;
+                if (callback) callback();
+            }, 3500);
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            initAudio();
+            triggerAirplaneAnimation(() => {
+                currentQuestion = 0;
+                showScreen('screen-game');
+                loadQuestion();
+            });
+        }
+
+        function loadQuestion() {
+            canAnswer = true;
+            const q = questions[currentQuestion];
+
+            document.getElementById('step-indicator').innerText = `שאלה ${currentQuestion + 1} מתוך ${questions.length}`;
+            document.getElementById('progress-bar').style.width = `${(currentQuestion / questions.length) * 100}%`;
+            document.getElementById('question-text').innerText = q.question;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            const feedback = document.getElementById('feedback-message');
+            feedback.innerText = '';
+            feedback.className = 'feedback-box';
+            document.getElementById('btn-next').style.display = 'none';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                const letter = document.createElement('span');
+                letter.className = 'opt-letter';
+                letter.textContent = ['א', 'ב', 'ג', 'ד'][idx];
+                const label = document.createElement('span');
+                if (q.flags) {
+                    btn.classList.add('flag-option');
+                    btn.setAttribute('aria-label', opt);
+                    label.innerHTML = FLAGS[q.flags[idx]];
+                } else {
+                    label.textContent = opt;
+                }
+                btn.append(letter, label);
+                btn.onclick = () => checkAnswer(idx, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            if (!canAnswer) return;
+            const q = questions[currentQuestion];
+            const feedback = document.getElementById('feedback-message');
+
+            if (selectedIndex === q.correct) {
+                canAnswer = false;
+                btnElement.classList.add('correct');
+                playSound('correct');
+                launchFireworks();
+                feedback.innerText = `✨ נכון מאוד! ${q.fact}`;
+                feedback.className = 'feedback-box correct-text';
+                document.querySelectorAll('.option-btn').forEach(b => b.style.pointerEvents = 'none');
+                document.getElementById('btn-next').style.display = 'inline-block';
+            } else {
+                btnElement.classList.add('wrong');
+                playSound('wrong');
+                feedback.innerText = '🤔 כמעט! נסו תשובה אחרת...';
+                feedback.className = 'feedback-box wrong-text';
+                setTimeout(() => btnElement.classList.remove('wrong'), 800);
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                document.getElementById('progress-bar').style.width = '100%';
+                showScreen('screen-win');
+                launchFireworks();
+                setTimeout(launchFireworks, 1000);
+            }
+        }
+
+        function restartGame() {
+            showScreen('screen-intro');
+        }
+
+        /* --- FIREWORKS --- */
+        const fwCanvas = document.getElementById('fireworks-canvas');
+        const fwCtx = fwCanvas.getContext('2d');
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            fwCanvas.width = window.innerWidth;
+            fwCanvas.height = window.innerHeight;
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+
+        function launchFireworks() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * fwCanvas.width * 0.8 + fwCanvas.width * 0.1;
+                    const y = Math.random() * fwCanvas.height * 0.5 + fwCanvas.height * 0.1;
+                    createFirework(x, y);
+                }, i * 250);
+            }
+        }
+
+        function createFirework(x, y) {
+            const particleCount = 60;
+            const colors = ['#FFB703', '#00B4D8', '#70E000', '#FF4D6D', '#FFFFFF'];
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (Math.PI * 2 / particleCount) * i;
+                const speed = Math.random() * 6 + 2;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    decay: Math.random() * 0.02 + 0.015,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function updateFireworks() {
+            fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    fwCtx.save();
+                    fwCtx.globalAlpha = p.alpha;
+                    fwCtx.fillStyle = p.color;
+                    fwCtx.beginPath();
+                    fwCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    fwCtx.fill();
+                    fwCtx.restore();
+                }
+            }
+            requestAnimationFrame(updateFireworks);
+        }
+
+        /* --- BACKGROUND CLOUDS --- */
+        let clouds = [];
+
+        function initBackground() {
+            clouds = [];
+            for (let i = 0; i < 8; i++) {
+                clouds.push({
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight * 0.7,
+                    speed: Math.random() * 0.5 + 0.2,
+                    radius: Math.random() * 40 + 30
+                });
+            }
+        }
+
+        function updateBackground() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            bgCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            clouds.forEach(c => {
+                c.x -= c.speed;
+                if (c.x < -100) c.x = bgCanvas.width + 100;
+                bgCtx.beginPath();
+                bgCtx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                bgCtx.arc(c.x + c.radius * 0.7, c.y - c.radius * 0.2, c.radius * 0.8, 0, Math.PI * 2);
+                bgCtx.arc(c.x - c.radius * 0.7, c.y - c.radius * 0.2, c.radius * 0.8, 0, Math.PI * 2);
+                bgCtx.fill();
+            });
+            requestAnimationFrame(updateBackground);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        initBackground();
+        updateBackground();
+        updateFireworks();
+    </script>
+</body>
+</html>
